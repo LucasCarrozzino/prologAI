@@ -1,0 +1,7 @@
+%Mudar grafos,os grafos são as conexões entre vertices/quadrados.Ao invês de (custo/avaliação,a(nó origem),b(nó destino)) 
+%Será (custo/avaliação,(coordenada x do nó origem,coordenada y do nó origem),(coordenada x do nó destino,coordenada y do nó destino))
+%falta implementar como diremos que um quadrado possui obstaculo ou sujeira.Por enquanto estou considerando uma lista para cada.
+%Criaremos uma lista com esse grafos que não são obstáculos.Essa lista será os movimentos possíveis.
+%A implementação do algoritmo de busca ditará a ordem dos vertices/quadrados destinos(com sujeira) percorridos.
+%Dica:nessa ideia estou listando os movimentos,mas podemos criar regras de movimento que calcularia isso.
+%começaremos com um tabuleiro 4x4.
