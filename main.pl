@@ -1,22 +1,27 @@
-% TODO: bBound
-% TODO: Algoritmo sujeira
-
 :- dynamic sGB/3. 
 :- dynamic sG/3. 
 
-% a00, a01, a02
-% a10, a11, a12
-% a20, a21, a22
+% no:
+no(a00,0,0).
+no(a01,0,1).
+no(a02,0,2).
+no(a10,1,0).
+no(a11,1,1).
+no(a12,1,2).
+no(a20,2,0).
+no(a21,2,1).
+no(a22,2,2).
+% a00, a10, a20
+% a01, a11, a21
+% a02, a12, a22
 
 % Obstáculo
 obstaculo(a11).
 obstaculo(a01).
 
-% Sujeira
-sujeira(a01).
-
-% Nó objetivo
-objetivo(a22).
+% Nó sujo
+sujeira(a22).
+sujeira(a21).
 
 % Custos de um nó para o outro
 sGB(1,a00,a01).
@@ -40,18 +45,17 @@ sGB(1,a10,a01).
 sGB(1,a01,a12).
 sGB(1,a12,a21).
 
-% Avaliação de um nó para o nó objetivo
-sH(a00, 10). 
-sH(a01, 10). 
-sH(a02, 10). 
-sH(a10, 10). 
-sH(a11, 10). 
-sH(a12, 10). 
-sH(a20, 10). 
-sH(a21, 10). 
-sH(a22, 0).
+% Avaliação de um nó para o nó com sujeira
+sH(No, H):- 
+  no(No,X1,Y1), 
+  sujeira(No2),
+  no(No2,X2,Y2),
+  abs(X1 - X2,Sx),
+  abs(Y1 - Y2,Sy),
+  H is Sx + Sy.
 
 % Relação do grafo não orientado
+% g(n)
 sG(G,V1,V2):-
     sGB(G,V1,V2).
 sG(G,V1,V2):-
@@ -67,10 +71,6 @@ sF(G,H,F,V1,V2):-
 sH(H,V1,V2):-
     sGB(_,V1,V2),
     sH(V2,H).
-
-% g(n)
-s(V1,V2):-
-    sG(_,V1,V2).
 
 %% Funções auxiliares %%
 concatena([],L,L).
@@ -98,7 +98,7 @@ ordenaF(Caminhos,CaminhosOrd) :-
 
 particionarF(_,[],[],[]).
 particionarF(X,[Y|Cauda],[Y|Menor],Maior) :-
-	maiorF(X,Y),!,
+	maiorF(X,Y),!, 
 	particionarF(X,Cauda,Menor,Maior).
 particionarF(X,[Y|Cauda],Menor,[Y|Maior]) :-
 	particionarF(X,Cauda,Menor,Maior).
@@ -120,6 +120,16 @@ estendeH([_,No|Caminho],NovosCaminhos) :-
         not(obstaculo(NovoNo)),
 		not(member(NovoNo,[No|Caminho])),
 		HNovo is HN),
+		NovosCaminhos
+	).
+
+estendeG([GC,No|Caminho],NovosCaminhos) :-
+	findall([GNovo,NovoNo,No|Caminho],
+	( 
+		sG(GN,No,NovoNo),
+        not(obstaculo(NovoNo)),
+		not(member(NovoNo,[No|Caminho])),
+		GNovo is GC + GN),
 		NovosCaminhos
 	).
 
@@ -148,12 +158,13 @@ buscaHeuristica(hillClimb,Inicio,Solucao,Custo):-
       hillClimb([[_,Inicio]],Solucao,Custo).
 buscaHeuristica(bestFirst,Inicio,Solucao,Custo):-
       bestFirst([[_,Inicio]],Solucao,Custo).
-% buscaHeuristica(bBound,Inicio,Solucao,Custo):- branchAndBound([[0,Inicio]],Solucao,Custo).
+buscaHeuristica(bBound,Inicio,Solucao,Custo):- 
+      bBound([[0,Inicio]],Solucao,Custo).
 buscaHeuristica(aEstrela,Inicio,Solucao,Custo):-
       aEstrela([[0,0,0,Inicio]],Solucao,Custo).
 
 hillClimb([[_,No|Caminho]|_],Solucao,'-') :-
-	objetivo(No),
+	sujeira(No),
 	reverse([No|Caminho],Solucao).
 hillClimb([Caminho|Caminhos], Solucao, Custo) :-
 	estendeH(Caminho, NovosCaminhos),
@@ -162,7 +173,7 @@ hillClimb([Caminho|Caminhos], Solucao, Custo) :-
 	hillClimb(CaminhosTotal, Solucao, Custo).
 
 bestFirst([[_,No|Caminho]|_],Solucao, '-') :-
-	objetivo(No),
+	sujeira(No),
 	reverse([No|Caminho],Solucao).
 bestFirst([Caminho|Caminhos], Solucao, Custo) :-
 	estendeH(Caminho, NovosCaminhos),
@@ -170,8 +181,17 @@ bestFirst([Caminho|Caminhos], Solucao, Custo) :-
 	concatena(CaminhosOrd, Caminhos, CaminhosTotal),
 	bestFirst(CaminhosTotal, Solucao, Custo).
 
+bBound([[Custo,No|Caminho]|_],Solucao,Custo) :-
+	sujeira(No),
+	reverse([No|Caminho],Solucao).
+bBound([Caminho|Caminhos], Solucao, Custo) :-
+	estendeG(Caminho, NovosCaminhos),
+	ordenaF(NovosCaminhos, CaminhosOrd),
+	concatena(CaminhosOrd, Caminhos, CaminhosTotal),
+	bBound(CaminhosTotal, Solucao, Custo).
+
 aEstrela([[G,_,_,No|Caminho]|_],Solucao,G) :- 
-	objetivo(No), 
+	sujeira(No), 
     reverse([No|Caminho],Solucao).
 aEstrela([Caminho|Caminhos], Solucao, G) :-
 	estendeF(Caminho, NovosCaminhos),
